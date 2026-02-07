@@ -12,6 +12,14 @@ interface CachedRates {
   timestamp: number;
 }
 
+// Default rates as fallback
+const DEFAULT_RATES: ExchangeRates = {
+  USD: 1,
+  EUR: 0.92,
+  JPY: 149.5,
+  GBP: 0.79,
+};
+
 export async function getExchangeRates(): Promise<ExchangeRates> {
   try {
     // Check cache first
@@ -19,23 +27,40 @@ export async function getExchangeRates(): Promise<ExchangeRates> {
     if (cached) {
       const { rates, timestamp }: CachedRates = JSON.parse(cached);
       if (Date.now() - timestamp < CACHE_DURATION) {
+        console.log('Using cached exchange rates');
         return rates;
       }
     }
 
     // Fetch from API
-    const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+    console.log('Fetching fresh exchange rates...');
+    const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
     if (!response.ok) {
-      throw new Error('Failed to fetch exchange rates');
+      console.error('API response not ok:', response.status);
+      throw new Error(`Failed to fetch exchange rates: ${response.status}`);
     }
 
     const data = await response.json();
+
+    if (!data.rates) {
+      console.error('No rates in API response:', data);
+      throw new Error('No rates in API response');
+    }
+
     const rates: ExchangeRates = {
       USD: 1,
-      EUR: data.rates.EUR,
-      JPY: data.rates.JPY,
-      GBP: data.rates.GBP,
+      EUR: data.rates.EUR || DEFAULT_RATES.EUR,
+      JPY: data.rates.JPY || DEFAULT_RATES.JPY,
+      GBP: data.rates.GBP || DEFAULT_RATES.GBP,
     };
+
+    console.log('Fresh rates fetched:', rates);
 
     // Cache the rates
     localStorage.setItem(
@@ -50,23 +75,41 @@ export async function getExchangeRates(): Promise<ExchangeRates> {
   } catch (error) {
     console.error('Error fetching exchange rates:', error);
     // Return default rates if fetch fails
-    return {
-      USD: 1,
-      EUR: 0.92,
-      JPY: 149.5,
-      GBP: 0.79,
-    };
+    return DEFAULT_RATES;
   }
 }
 
-export function convertCurrency(amount: number, fromCurrency: Currency, toCurrency: Currency, rates: ExchangeRates): number {
+export function convertCurrency(
+  amount: number,
+  fromCurrency: Currency,
+  toCurrency: Currency,
+  rates: ExchangeRates
+): number {
   if (fromCurrency === toCurrency) {
     return amount;
   }
 
+  // Validate inputs
+  if (!rates[fromCurrency] || !rates[toCurrency]) {
+    console.error(`Invalid currency rates: ${fromCurrency} or ${toCurrency}`, rates);
+    return amount; // Return original amount if rates are invalid
+  }
+
+  if (isNaN(amount) || !isFinite(amount)) {
+    console.error('Invalid amount:', amount);
+    return 0;
+  }
+
   // Convert to USD first, then to target currency
   const amountInUSD = amount / rates[fromCurrency];
-  return amountInUSD * rates[toCurrency];
+  const result = amountInUSD * rates[toCurrency];
+
+  if (isNaN(result) || !isFinite(result)) {
+    console.error('Conversion resulted in NaN:', { amount, fromCurrency, toCurrency, rates });
+    return 0;
+  }
+
+  return result;
 }
 
 export function formatCurrencySymbol(currency: Currency): string {

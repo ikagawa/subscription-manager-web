@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSubscriptions } from '../context/SubscriptionContext';
 import {
-  calculateMonthlyCost,
-  calculateAnnualCost,
   getActiveCount,
   CATEGORY_COLORS,
 } from '../utils/subscription-utils';
@@ -26,6 +24,7 @@ export function Home({ onOpenAddModal }: HomeProps) {
     try {
       setRatesLoading(true);
       const rates = await getExchangeRates();
+      console.log('Exchange rates loaded:', rates);
       setExchangeRates(rates);
     } catch (error) {
       console.error('Failed to load exchange rates:', error);
@@ -35,15 +34,30 @@ export function Home({ onOpenAddModal }: HomeProps) {
   };
 
   const calculateTotalCost = (cycle: 'monthly' | 'annual') => {
-    if (!exchangeRates) return 0;
+    if (!exchangeRates) {
+      console.log('Exchange rates not loaded yet');
+      return 0;
+    }
 
-    return subscriptions
+    const total = subscriptions
       .filter((sub) => sub.status === 'active')
       .reduce((total, sub) => {
+        if (!sub.currency || typeof sub.price !== 'number') {
+          console.warn('Invalid subscription data:', sub);
+          return total;
+        }
         const amount = cycle === 'monthly' ? sub.price : sub.price * 12;
         const converted = convertCurrency(amount, sub.currency, selectedCurrency, exchangeRates);
+        console.log(`Converting ${amount} ${sub.currency} to ${selectedCurrency}: ${converted}`);
         return total + converted;
       }, 0);
+
+    if (isNaN(total) || !isFinite(total)) {
+      console.error('Total calculation resulted in NaN:', total);
+      return 0;
+    }
+
+    return total;
   };
 
   const monthlyCost = calculateTotalCost('monthly');
@@ -82,7 +96,7 @@ export function Home({ onOpenAddModal }: HomeProps) {
             <p className="text-muted text-sm mb-2">Monthly Cost</p>
             <p className="text-2xl font-bold text-foreground">
               {formatCurrencySymbol(selectedCurrency)}
-              {monthlyCost.toFixed(2)}
+              {isNaN(monthlyCost) ? '0.00' : monthlyCost.toFixed(2)}
             </p>
           </div>
 
@@ -91,7 +105,7 @@ export function Home({ onOpenAddModal }: HomeProps) {
             <p className="text-muted text-sm mb-2">Annual Cost</p>
             <p className="text-2xl font-bold text-foreground">
               {formatCurrencySymbol(selectedCurrency)}
-              {annualCost.toFixed(2)}
+              {isNaN(annualCost) ? '0.00' : annualCost.toFixed(2)}
             </p>
           </div>
         </div>
