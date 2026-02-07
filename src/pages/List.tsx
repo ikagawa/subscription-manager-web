@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useSubscriptions } from '../context/SubscriptionContext';
 import { EditModal } from '../components/EditModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { AddModal } from '../components/AddModal';
 import {
   formatPrice,
   formatDate,
@@ -10,7 +11,7 @@ import {
   CATEGORY_COLORS,
 } from '../utils/subscription-utils';
 import { getDefaultServiceIcon } from '../utils/service-icons';
-import { Search, Trash2 } from 'lucide-react';
+import { Search, Trash2, Plus } from 'lucide-react';
 import type { SubscriptionCategory, Subscription } from '../context/SubscriptionContext';
 
 type CategoryFilter = 'all' | SubscriptionCategory;
@@ -31,6 +32,7 @@ export function ListPage() {
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const filteredSubscriptions = subscriptions.filter((sub) => {
     const matchesSearch = sub.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -191,6 +193,17 @@ export function ListPage() {
           isLoading={isDeleting}
         />
       )}
+
+      {/* Add Modal */}
+      {showAddModal && <AddModal onClose={() => setShowAddModal(false)} />}
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setShowAddModal(true)}
+        className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg hover:bg-opacity-90 transition"
+      >
+        <Plus size={24} />
+      </button>
     </div>
   );
 }
