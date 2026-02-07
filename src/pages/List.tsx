@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSubscriptions } from '../context/SubscriptionContext';
+import { EditModal } from '../components/EditModal';
 import {
   formatPrice,
   formatDate,
@@ -8,7 +9,7 @@ import {
   CATEGORY_COLORS,
 } from '../utils/subscription-utils';
 import { Search, Trash2 } from 'lucide-react';
-import type { SubscriptionCategory } from '../context/SubscriptionContext';
+import type { SubscriptionCategory, Subscription } from '../context/SubscriptionContext';
 
 type CategoryFilter = 'all' | SubscriptionCategory;
 
@@ -25,6 +26,7 @@ export function ListPage() {
   const { subscriptions, deleteSubscription } = useSubscriptions();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
 
   const filteredSubscriptions = subscriptions.filter((sub) => {
     const matchesSearch = sub.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -92,7 +94,8 @@ export function ListPage() {
               return (
                 <div
                   key={item.id}
-                  className="bg-surface rounded-lg p-4 border border-border flex items-center justify-between hover:bg-opacity-80 transition"
+                  className="bg-surface rounded-lg p-4 border border-border flex items-center justify-between hover:bg-opacity-80 transition cursor-pointer"
+                  onClick={() => setSelectedSubscription(item)}
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
@@ -134,6 +137,14 @@ export function ListPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {selectedSubscription && (
+        <EditModal
+          subscription={selectedSubscription}
+          onClose={() => setSelectedSubscription(null)}
+        />
+      )}
     </div>
   );
 }
