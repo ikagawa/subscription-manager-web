@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSubscriptions, type SubscriptionCategory, type BillingCycle } from '../context/SubscriptionContext';
+import { ConfirmDialog } from './ConfirmDialog';
 import { X } from 'lucide-react';
 
 const CATEGORIES: Array<{ id: SubscriptionCategory; label: string }> = [
@@ -31,8 +32,10 @@ export function AddModal({ onClose }: AddModalProps) {
   const [renewalDate, setRenewalDate] = useState(new Date().toISOString().split('T')[0]);
   const [isActive, setIsActive] = useState(true);
   const [notes, setNotes] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim() || !price.trim()) {
@@ -40,6 +43,11 @@ export function AddModal({ onClose }: AddModalProps) {
       return;
     }
 
+    setShowConfirm(true);
+  };
+
+  const handleConfirmAdd = async () => {
+    setIsAdding(true);
     try {
       await addSubscription({
         name: name.trim(),
@@ -52,10 +60,13 @@ export function AddModal({ onClose }: AddModalProps) {
         notes: notes.trim(),
       });
 
-      alert('Subscription added successfully');
+      setShowConfirm(false);
       onClose();
     } catch (error) {
       alert('Failed to add subscription');
+      setShowConfirm(false);
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -192,18 +203,34 @@ export function AddModal({ onClose }: AddModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-surface border border-border text-foreground rounded-lg py-2 font-medium hover:bg-border transition"
+              disabled={isAdding}
+              className="flex-1 bg-surface border border-border text-foreground rounded-lg py-2 font-medium hover:bg-border transition disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 bg-primary text-white rounded-lg py-2 font-medium hover:bg-opacity-90 transition"
+              disabled={isAdding}
+              className="flex-1 bg-primary text-white rounded-lg py-2 font-medium hover:bg-opacity-90 transition disabled:opacity-50"
             >
               Save
             </button>
           </div>
         </form>
+
+        {/* Confirm Dialog */}
+        {showConfirm && (
+          <ConfirmDialog
+            title="Add Subscription?"
+            message={`Add "${name}" to your subscriptions?`}
+            type="warning"
+            confirmText="Add"
+            cancelText="Cancel"
+            onConfirm={handleConfirmAdd}
+            onCancel={() => setShowConfirm(false)}
+            isLoading={isAdding}
+          />
+        )}
       </div>
     </div>
   );

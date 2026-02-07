@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSubscriptions, type Subscription, type SubscriptionCategory, type BillingCycle } from '../context/SubscriptionContext';
+import { ConfirmDialog } from './ConfirmDialog';
 import { X } from 'lucide-react';
 
 const CATEGORIES: Array<{ id: SubscriptionCategory; label: string }> = [
@@ -31,8 +32,10 @@ export function EditModal({ subscription, onClose }: EditModalProps) {
   const [renewalDate, setRenewalDate] = useState(subscription.renewalDate.split('T')[0]);
   const [isActive, setIsActive] = useState(subscription.status === 'active');
   const [notes, setNotes] = useState(subscription.notes || '');
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim() || !price.trim()) {
@@ -40,6 +43,11 @@ export function EditModal({ subscription, onClose }: EditModalProps) {
       return;
     }
 
+    setShowConfirm(true);
+  };
+
+  const handleConfirmSave = async () => {
+    setIsSaving(true);
     try {
       await updateSubscription(subscription.id, {
         name: name.trim(),
@@ -51,10 +59,13 @@ export function EditModal({ subscription, onClose }: EditModalProps) {
         notes: notes.trim(),
       });
 
-      alert('Subscription updated successfully');
+      setShowConfirm(false);
       onClose();
     } catch (error) {
       alert('Failed to update subscription');
+      setShowConfirm(false);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -180,18 +191,34 @@ export function EditModal({ subscription, onClose }: EditModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-surface border border-border text-foreground rounded-lg py-2 font-medium hover:bg-border transition"
+              disabled={isSaving}
+              className="flex-1 bg-surface border border-border text-foreground rounded-lg py-2 font-medium hover:bg-border transition disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 bg-primary text-white rounded-lg py-2 font-medium hover:bg-opacity-90 transition"
+              disabled={isSaving}
+              className="flex-1 bg-primary text-white rounded-lg py-2 font-medium hover:bg-opacity-90 transition disabled:opacity-50"
             >
               Save
             </button>
           </div>
         </form>
+
+        {/* Confirm Dialog */}
+        {showConfirm && (
+          <ConfirmDialog
+            title="Save Changes?"
+            message={`Update "${name}" with the new details?`}
+            type="warning"
+            confirmText="Save"
+            cancelText="Cancel"
+            onConfirm={handleConfirmSave}
+            onCancel={() => setShowConfirm(false)}
+            isLoading={isSaving}
+          />
+        )}
       </div>
     </div>
   );
