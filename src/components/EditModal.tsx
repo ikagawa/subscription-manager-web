@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSubscriptions, type Subscription, type SubscriptionCategory, type BillingCycle } from '../context/SubscriptionContext';
 import { ConfirmDialog } from './ConfirmDialog';
+import { getDefaultServiceIcon } from '../utils/service-icons';
 import { X } from 'lucide-react';
 
 const CATEGORIES: Array<{ id: SubscriptionCategory; label: string }> = [
@@ -82,12 +83,29 @@ export function EditModal({ subscription, onClose }: EditModalProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Service Icon Preview */}
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-surface border border-border rounded-lg flex items-center justify-center overflow-hidden">
+              {subscription.iconUrl ? (
+                <img
+                  src={subscription.iconUrl}
+                  alt={subscription.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = getDefaultServiceIcon();
+                  }}
+                />
+              ) : (
+                <img src={getDefaultServiceIcon()} alt="default" className="w-full h-full object-cover" />
+              )}
+            </div>
+          </div>
+
           {/* Name */}
           <div>
-            <label className="block text-foreground font-medium mb-2">Service Name *</label>
+            <label className="block text-foreground font-medium mb-2">Service Name</label>
             <input
               type="text"
-              placeholder="e.g., Netflix, Spotify"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full bg-surface border border-border rounded-lg px-4 py-2 text-foreground outline-none focus:ring-2 focus:ring-primary"
@@ -96,7 +114,7 @@ export function EditModal({ subscription, onClose }: EditModalProps) {
 
           {/* Price */}
           <div>
-            <label className="block text-foreground font-medium mb-2">Price *</label>
+            <label className="block text-foreground font-medium mb-2">Price</label>
             <div className="flex items-center bg-surface border border-border rounded-lg px-4 py-2">
               <span className="text-foreground mr-2">$</span>
               <input
@@ -176,7 +194,7 @@ export function EditModal({ subscription, onClose }: EditModalProps) {
 
           {/* Notes */}
           <div>
-            <label className="block text-foreground font-medium mb-2">Notes (Optional)</label>
+            <label className="block text-foreground font-medium mb-2">Notes</label>
             <textarea
               placeholder="Add any notes..."
               value={notes}
@@ -209,10 +227,10 @@ export function EditModal({ subscription, onClose }: EditModalProps) {
         {/* Confirm Dialog */}
         {showConfirm && (
           <ConfirmDialog
-            title="Save Changes?"
+            title="Update Subscription?"
             message={`Update "${name}" with the new details?`}
             type="warning"
-            confirmText="Save"
+            confirmText="Update"
             cancelText="Cancel"
             onConfirm={handleConfirmSave}
             onCancel={() => setShowConfirm(false)}

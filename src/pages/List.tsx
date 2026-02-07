@@ -9,6 +9,7 @@ import {
   CATEGORY_LABELS,
   CATEGORY_COLORS,
 } from '../utils/subscription-utils';
+import { getDefaultServiceIcon } from '../utils/service-icons';
 import { Search, Trash2 } from 'lucide-react';
 import type { SubscriptionCategory, Subscription } from '../context/SubscriptionContext';
 
@@ -53,9 +54,9 @@ export function ListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <div className="bg-primary text-white p-6">
+      <div className="bg-gradient-to-br from-primary to-primary/80 text-white p-6 rounded-b-3xl">
         <h1 className="text-3xl font-bold mb-4">All Subscriptions</h1>
 
         {/* Search Bar */}
@@ -78,7 +79,7 @@ export function ListPage() {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-full whitespace-nowrap transition ${
+              className={`px-4 py-2 rounded-lg whitespace-nowrap transition ${
                 selectedCategory === cat.id
                   ? 'bg-primary text-white'
                   : 'bg-surface border border-border text-foreground hover:bg-border'
@@ -106,9 +107,26 @@ export function ListPage() {
               return (
                 <div
                   key={item.id}
-                  className="bg-surface rounded-lg p-4 border border-border flex items-center justify-between hover:bg-opacity-80 transition cursor-pointer"
+                  className="bg-surface rounded-lg p-4 border border-border flex items-center justify-between hover:bg-border transition cursor-pointer"
                   onClick={() => setSelectedSubscription(item)}
                 >
+                  {/* Icon */}
+                  <div className="w-12 h-12 bg-background rounded-lg flex items-center justify-center flex-shrink-0 mr-4 overflow-hidden border border-border">
+                    {item.iconUrl ? (
+                      <img
+                        src={item.iconUrl}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = getDefaultServiceIcon();
+                        }}
+                      />
+                    ) : (
+                      <img src={getDefaultServiceIcon()} alt="default" className="w-full h-full object-cover" />
+                    )}
+                  </div>
+
+                  {/* Content */}
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <div
@@ -125,6 +143,8 @@ export function ListPage() {
                     <p className="text-muted text-xs mb-1">{CATEGORY_LABELS[item.category]}</p>
                     <p className="text-muted text-xs">Renews {formatDate(item.renewalDate)}</p>
                   </div>
+
+                  {/* Price and Actions */}
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className="text-foreground font-semibold">{formatPrice(item.price)}</p>
@@ -137,7 +157,10 @@ export function ListPage() {
                       </p>
                     </div>
                     <button
-                      onClick={() => handleDelete(item.id, item.name)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(item.id, item.name);
+                      }}
                       className="p-2 text-error hover:bg-error hover:bg-opacity-10 rounded transition"
                     >
                       <Trash2 size={16} />
@@ -152,10 +175,7 @@ export function ListPage() {
 
       {/* Edit Modal */}
       {selectedSubscription && (
-        <EditModal
-          subscription={selectedSubscription}
-          onClose={() => setSelectedSubscription(null)}
-        />
+        <EditModal subscription={selectedSubscription} onClose={() => setSelectedSubscription(null)} />
       )}
 
       {/* Delete Confirm Dialog */}

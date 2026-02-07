@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSubscriptions, type SubscriptionCategory, type BillingCycle, type Currency } from '../context/SubscriptionContext';
 import { ConfirmDialog } from './ConfirmDialog';
-import { X } from 'lucide-react';
+import { getServiceIcon, getDefaultServiceIcon } from '../utils/service-icons';
+import { X, Loader } from 'lucide-react';
 
 const CATEGORIES: Array<{ id: SubscriptionCategory; label: string }> = [
   { id: 'streaming', label: 'Streaming' },
@@ -42,6 +43,28 @@ export function AddModal({ onClose }: AddModalProps) {
   const [notes, setNotes] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [iconUrl, setIconUrl] = useState<string | null>(null);
+  const [loadingIcon, setLoadingIcon] = useState(false);
+
+  // Fetch icon when name changes
+  useEffect(() => {
+    if (name.trim()) {
+      fetchIcon();
+    }
+  }, [name]);
+
+  const fetchIcon = async () => {
+    setLoadingIcon(true);
+    try {
+      const url = await getServiceIcon(name);
+      setIconUrl(url);
+    } catch (error) {
+      console.error('Error fetching icon:', error);
+      setIconUrl(null);
+    } finally {
+      setLoadingIcon(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +90,7 @@ export function AddModal({ onClose }: AddModalProps) {
         renewalDate: new Date(renewalDate).toISOString(),
         status: isActive ? 'active' : 'paused',
         notes: notes.trim(),
+        iconUrl: iconUrl || undefined,
       });
 
       setShowConfirm(false);
@@ -92,6 +116,23 @@ export function AddModal({ onClose }: AddModalProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Service Icon Preview */}
+          {name.trim() && (
+            <div className="flex items-center justify-center mb-4">
+              <div className="relative">
+                <div className="w-16 h-16 bg-surface border border-border rounded-lg flex items-center justify-center overflow-hidden">
+                  {loadingIcon ? (
+                    <Loader size={24} className="text-primary animate-spin" />
+                  ) : iconUrl ? (
+                    <img src={iconUrl} alt={name} className="w-full h-full object-cover" onError={() => setIconUrl(null)} />
+                  ) : (
+                    <img src={getDefaultServiceIcon()} alt="default" className="w-full h-full object-cover" />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Name */}
           <div>
             <label className="block text-foreground font-medium mb-2">Service Name *</label>

@@ -16,6 +16,7 @@ export interface Subscription {
   renewalDate: string;
   status: SubscriptionStatus;
   notes?: string;
+  iconUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
