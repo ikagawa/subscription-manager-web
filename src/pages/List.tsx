@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSubscriptions } from '../context/SubscriptionContext';
 import { EditModal } from '../components/EditModal';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import {
   formatPrice,
   formatDate,
@@ -27,6 +28,8 @@ export function ListPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filteredSubscriptions = subscriptions.filter((sub) => {
     const matchesSearch = sub.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -34,9 +37,18 @@ export function ListPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleDelete = (id: string, name: string) => {
-    if (confirm(`Are you sure you want to delete "${name}"?`)) {
-      deleteSubscription(id);
+  const handleDelete = async (id: string, name: string) => {
+    setDeleteConfirm({ id, name });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
+    setIsDeleting(true);
+    try {
+      await deleteSubscription(deleteConfirm.id);
+      setDeleteConfirm(null);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -143,6 +155,20 @@ export function ListPage() {
         <EditModal
           subscription={selectedSubscription}
           onClose={() => setSelectedSubscription(null)}
+        />
+      )}
+
+      {/* Delete Confirm Dialog */}
+      {deleteConfirm && (
+        <ConfirmDialog
+          title="Delete Subscription?"
+          message={`Are you sure you want to delete "${deleteConfirm.name}"? This action cannot be undone.`}
+          type="delete"
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteConfirm(null)}
+          isLoading={isDeleting}
         />
       )}
     </div>
