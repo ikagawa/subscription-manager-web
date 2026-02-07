@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSubscriptions, type SubscriptionCategory, type BillingCycle } from '../context/SubscriptionContext';
+import { useSubscriptions, type SubscriptionCategory, type BillingCycle, type Currency } from '../context/SubscriptionContext';
 import { ConfirmDialog } from './ConfirmDialog';
 import { X } from 'lucide-react';
 
@@ -17,6 +17,13 @@ const BILLING_CYCLES: Array<{ id: BillingCycle; label: string }> = [
   { id: 'other', label: 'Other' },
 ];
 
+const CURRENCIES: Array<{ id: Currency; label: string; symbol: string }> = [
+  { id: 'USD', label: 'US Dollar', symbol: '$' },
+  { id: 'EUR', label: 'Euro', symbol: '€' },
+  { id: 'JPY', label: 'Japanese Yen', symbol: '¥' },
+  { id: 'GBP', label: 'British Pound', symbol: '£' },
+];
+
 interface AddModalProps {
   onClose: () => void;
 }
@@ -26,6 +33,7 @@ export function AddModal({ onClose }: AddModalProps) {
 
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [currency, setCurrency] = useState<Currency>('USD');
   const [category, setCategory] = useState<SubscriptionCategory>('streaming');
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -52,6 +60,7 @@ export function AddModal({ onClose }: AddModalProps) {
       await addSubscription({
         name: name.trim(),
         price: parseFloat(price),
+        currency,
         category,
         billingCycle,
         startDate: new Date(startDate).toISOString(),
@@ -95,19 +104,37 @@ export function AddModal({ onClose }: AddModalProps) {
             />
           </div>
 
-          {/* Price */}
-          <div>
-            <label className="block text-foreground font-medium mb-2">Price *</label>
-            <div className="flex items-center bg-surface border border-border rounded-lg px-4 py-2">
-              <span className="text-foreground mr-2">$</span>
-              <input
-                type="number"
-                placeholder="0.00"
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="flex-1 bg-transparent text-foreground outline-none"
-              />
+          {/* Price and Currency */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="col-span-2">
+              <label className="block text-foreground font-medium mb-2">Price *</label>
+              <div className="flex items-center bg-surface border border-border rounded-lg px-4 py-2">
+                <span className="text-foreground mr-2">
+                  {CURRENCIES.find((c) => c.id === currency)?.symbol}
+                </span>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="flex-1 bg-transparent text-foreground outline-none"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-foreground font-medium mb-2">Currency</label>
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value as Currency)}
+                className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-foreground outline-none focus:ring-2 focus:ring-primary"
+              >
+                {CURRENCIES.map((curr) => (
+                  <option key={curr.id} value={curr.id}>
+                    {curr.id}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -222,7 +249,7 @@ export function AddModal({ onClose }: AddModalProps) {
         {showConfirm && (
           <ConfirmDialog
             title="Add Subscription?"
-            message={`Add "${name}" to your subscriptions?`}
+            message={`Add "${name}" (${CURRENCIES.find((c) => c.id === currency)?.symbol}${price}) to your subscriptions?`}
             type="warning"
             confirmText="Add"
             cancelText="Cancel"

@@ -3,11 +3,13 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 export type SubscriptionCategory = 'streaming' | 'software' | 'fitness' | 'entertainment' | 'other';
 export type BillingCycle = 'monthly' | 'yearly' | 'other';
 export type SubscriptionStatus = 'active' | 'paused' | 'cancelled';
+export type Currency = 'USD' | 'EUR' | 'JPY' | 'GBP';
 
 export interface Subscription {
   id: string;
   name: string;
   price: number;
+  currency: Currency;
   billingCycle: BillingCycle;
   category: SubscriptionCategory;
   startDate: string;
@@ -25,18 +27,23 @@ interface SubscriptionContextType {
   deleteSubscription: (id: string) => Promise<void>;
   getSubscriptionById: (id: string) => Subscription | undefined;
   isLoading: boolean;
+  selectedCurrency: Currency;
+  setSelectedCurrency: (currency: Currency) => void;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'subscriptions';
+const CURRENCY_KEY = 'selected_currency';
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCurrency, setSelectedCurrencyState] = useState<Currency>('USD');
 
   useEffect(() => {
     loadSubscriptions();
+    loadSelectedCurrency();
   }, []);
 
   const loadSubscriptions = async () => {
@@ -50,6 +57,17 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       console.error('Failed to load subscriptions:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadSelectedCurrency = () => {
+    try {
+      const currency = localStorage.getItem(CURRENCY_KEY);
+      if (currency) {
+        setSelectedCurrencyState(currency as Currency);
+      }
+    } catch (error) {
+      console.error('Failed to load selected currency:', error);
     }
   };
 
@@ -94,6 +112,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     return subscriptions.find((sub) => sub.id === id);
   };
 
+  const handleSetSelectedCurrency = (currency: Currency) => {
+    setSelectedCurrencyState(currency);
+    localStorage.setItem(CURRENCY_KEY, currency);
+  };
+
   return (
     <SubscriptionContext.Provider
       value={{
@@ -103,6 +126,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         deleteSubscription,
         getSubscriptionById,
         isLoading,
+        selectedCurrency,
+        setSelectedCurrency: handleSetSelectedCurrency,
       }}
     >
       {children}
