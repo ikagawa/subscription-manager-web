@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useSubscriptions } from '../context/SubscriptionContext';
 import {
   calculateMonthlyCost,
@@ -13,9 +13,12 @@ import {
 } from '../utils/subscription-utils';
 import { Plus, Calendar } from 'lucide-react';
 
-export function Home() {
+interface HomeProps {
+  onOpenAddModal: () => void;
+}
+
+export function Home({ onOpenAddModal }: HomeProps) {
   const { subscriptions, isLoading } = useSubscriptions();
-  const [showAddModal, setShowAddModal] = useState(false);
 
   const monthlyCost = calculateMonthlyCost(subscriptions);
   const annualCost = calculateAnnualCost(subscriptions);
@@ -124,7 +127,7 @@ export function Home() {
 
       {/* Floating Action Button */}
       <button
-        onClick={() => setShowAddModal(true)}
+        onClick={onOpenAddModal}
         className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg hover:bg-opacity-90 transition"
       >
         <Plus size={24} />

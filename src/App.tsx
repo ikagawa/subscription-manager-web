@@ -16,7 +16,7 @@ function AppContent() {
     <div className="flex flex-col h-screen bg-background">
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        {currentPage === 'home' && <Home />}
+        {currentPage === 'home' && <Home onOpenAddModal={() => setShowAddModal(true)} />}
         {currentPage === 'list' && <ListPage />}
         {currentPage === 'settings' && <Settings />}
       </div>
